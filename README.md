@@ -17,3 +17,6 @@ A recreation of ls. By default it prints with the ls flags -hlN.
 It has available flags for print all files (-a), print simple output (-s),
 and help (-h). The path can be specified or if blank will be the current directory.
 
+### Kat
+A recreation of cat. It takes one or more files and concatenates their content to standard output.
+The help flag (-h) shows usage.
