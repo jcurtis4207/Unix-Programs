@@ -106,50 +106,48 @@ void getSize(Entry& entry)
     entry.size = output.str();
 }
 
-void getEntryName(Entry& entry)
+void getDirectoryName(Entry& entry)
 {
     stringstream output;
-    // get simplified formatting
     if(tackS)
     {
-        if(entry.isDirectory)
-            output << BOLD + WHITE << entry.path.filename().string() 
-                << NORMAL + WHITE;
-        else
-            output << entry.path.filename().string();
+        output << BOLD + WHITE << entry.path.filename().string() 
+            << NORMAL + WHITE;
         entry.name = output.str();
         return;
     }
-    // directory
-    if(entry.isDirectory)
+    if(entry.isSymlink)
     {
-        if(entry.isSymlink)
-        {
-            output << BOLD + CYAN << entry.path.filename().string() 
-                << NORMAL + WHITE << " -> ";
-            output << BOLD + BLUE << filesystem::read_symlink(entry.path) 
-                << NORMAL + WHITE;
-        }
-        else
-            output << BOLD + BLUE << entry.path.filename().string() 
-                << NORMAL + WHITE;
-        entry.name = output.str();
+        output << BOLD + CYAN << entry.path.filename().string() 
+            << NORMAL + WHITE << " -> ";
+        output << BOLD + BLUE << filesystem::read_symlink(entry.path) 
+            << NORMAL + WHITE;
     }
-    // file
     else
+        output << BOLD + BLUE << entry.path.filename().string() 
+            << NORMAL + WHITE;
+    entry.name = output.str();
+}
+
+void getFileName(Entry& entry)
+{
+    if(tackS)
     {
-        if(entry.isSymlink)
-        {
-            output << NORMAL + CYAN << entry.path.filename().string() 
-                << NORMAL + WHITE << " -> ";
-            output << NORMAL + MAGENTA << filesystem::read_symlink(entry.path) 
-                << NORMAL + WHITE;
-        }
-        else
-            output << NORMAL + MAGENTA << entry.path.filename().string() 
-                << NORMAL + WHITE;
-        entry.name = output.str();
+        entry.name = entry.path.filename().string();
+        return;
+    } 
+    stringstream output;
+    if(entry.isSymlink)
+    {
+        output << NORMAL + CYAN << entry.path.filename().string() 
+            << NORMAL + WHITE << " -> ";
+        output << NORMAL + MAGENTA << filesystem::read_symlink(entry.path) 
+            << NORMAL + WHITE;
     }
+    else
+        output << NORMAL + MAGENTA << entry.path.filename().string() 
+            << NORMAL + WHITE;
+    entry.name = output.str();
 }
 
 void populateStructs(vector<Entry>& entries)
@@ -162,7 +160,10 @@ void populateStructs(vector<Entry>& entries)
             getOwner(entry);
             getSize(entry);
         }
-        getEntryName(entry);
+        if(entry.isDirectory)
+            getDirectoryName(entry);
+        else
+            getFileName(entry);
     }
 }
 
@@ -205,7 +206,7 @@ void printUsage(bool tackH)
     cout << "   -a : show hidden files\n";
     cout << "   -s : simple - don't show file attributes, colors, or follow symlinks\n";
     cout << "   -h : show help\n";
-    exit(0);
+    exit(tackH ? 0 : 1);
 }
 
 int getFlags(int argc, char** argv)
@@ -256,19 +257,9 @@ bool entrySort(const Entry& e1, const Entry& e2)
     return (name1.compare(name2) < 0);
 }
 
-int main(int argc, char** argv)
+vector<Entry> getDirectoryContents(string path)
 {
     vector<Entry> entries;
-    const int pathIndex = getFlags(argc, argv);
-    const string path = (pathIndex == -1) ? 
-        filesystem::current_path().string() : 
-        static_cast<string>(argv[pathIndex]);
-    if (!filesystem::exists(path))
-    {
-        cerr << "ERROR: Path does not exist\n";
-        return 1;
-    }
-    // get directory contents
     for(const auto& file : filesystem::directory_iterator(path))
     {
         // skip hidden files unless -a specified
@@ -281,6 +272,21 @@ int main(int argc, char** argv)
         entries.push_back(temp);
     }
     sort(entries.begin(), entries.end(), entrySort);
+    return entries;
+}
+
+int main(int argc, char** argv)
+{
+    const int pathIndex = getFlags(argc, argv);
+    const string path = (pathIndex == -1) ? 
+        filesystem::current_path().string() : 
+        static_cast<string>(argv[pathIndex]);
+    if (!filesystem::exists(path))
+    {
+        cerr << "ERROR: Path does not exist\n";
+        return 1;
+    }
+    vector<Entry> entries = getDirectoryContents(path);
     populateStructs(entries);
     printOutput(entries);
     return 0;
