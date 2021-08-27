@@ -14,9 +14,19 @@ The collection currently includes:
 
 ### Ellis
 A recreation of ls. By default it prints with the ls flags -hlN.
-It has available flags for print all files (-a), print simple output (-s),
-and help (-h). The path can be specified or if blank will be the current directory.
+The hidden flag (-a) prints hidden files and directories.
+The simple flag (-s) prints a simplified output and formatting.
+The help flag (-h) shows usage.
+The path can be specified, or if blank will be the current directory.
 
 ### Kat
 A recreation of cat. It takes one or more files and concatenates their content to standard output.
 The help flag (-h) shows usage.
+
+### Trey
+A recreation of tree. 
+It displays the directory structure of a given path, or if black will be the current directory.
+The depth flag (-l) sets how many levels the structure will display, and is 1 by default.
+The directory flag (-d) displays only directories.
+The hidden flag (-a) prints hidden files and directories.
+the help flag (-h) shows usage.
