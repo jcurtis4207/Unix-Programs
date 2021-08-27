@@ -198,15 +198,17 @@ void printOutput(vector<Entry>& entries)
     }
 }
 
-void printUsage(bool tackH)
+void printUsage(bool badFlag, bool badPath, string problem)
 {
-    if(!tackH)
-        cerr << "ERROR: Unrecognized flag\n";
+    if(badFlag)
+        cerr << "ERROR: Unrecognized flag \"" << problem << "\"\n";
+    else if(badPath)
+        cerr << "ERROR: Unrecognized file \"" << problem << "\"\n";
     cout << "Usage: ellis [-ash] [path]\n";
     cout << "   -a : show hidden files\n";
     cout << "   -s : simple - don't show file attributes, colors, or follow symlinks\n";
     cout << "   -h : show help\n";
-    exit(tackH ? 0 : 1);
+    exit((badFlag || badPath) ? 1 : 0);
 }
 
 int getFlags(int argc, char** argv)
@@ -225,13 +227,13 @@ int getFlags(int argc, char** argv)
                     charIndex < string(argv[arg]).length(); charIndex++)
                 {
                     if(argv[arg][charIndex] == 'h')
-                        printUsage(true);
+                        printUsage(false, false, "");
                     else if(argv[arg][charIndex] == 'a')
                         tackA = true;
                     else if(argv[arg][charIndex] == 's')
                         tackS = true;
                     else
-                        printUsage(false);
+                        printUsage(true, false, string(1, argv[arg][charIndex]));
                 }
             }
             // return index of first non '-' argument
@@ -282,10 +284,7 @@ int main(int argc, char** argv)
         filesystem::current_path().string() : 
         static_cast<string>(argv[pathIndex]);
     if (!filesystem::exists(path))
-    {
-        cerr << "ERROR: Path does not exist\n";
-        return 1;
-    }
+        printUsage(false, true, path);
     vector<Entry> entries = getDirectoryContents(path);
     populateStructs(entries);
     printOutput(entries);

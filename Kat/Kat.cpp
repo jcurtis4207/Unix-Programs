@@ -12,14 +12,16 @@
 
 using namespace std;
 
-void printUsage(string errorType)
+void printUsage(string errorType, string problem)
 {
     if(errorType == "badFlag")
-        cerr << "ERROR: Unrecognized flag\n";
+        cerr << "ERROR: Unrecognized flag \"" << problem << "\"\n";
     else if(errorType == "badFile")
-        cerr << "ERROR: Unrecognized file\n";
+        cerr << "ERROR: Unrecognized file \"" << problem << "\"\n";
+    else if(errorType == "noFile")
+        cerr << "ERROR: No file specified\n";
     else if(errorType == "isDir")
-        cerr << "ERROR: Input is directory\n";
+        cerr << "ERROR: \"" << problem << "\" is directory\n";
     cout << "Usage: cat [-h] file1 [file2..fileN]\n";
     cout << "   -h : show help\n";
     exit((errorType == "") ? 0 : 1);
@@ -41,9 +43,9 @@ int getFlags(int argc, char** argv)
                     charIndex < string(argv[arg]).length(); charIndex++)
                 {
                     if(argv[arg][charIndex] == 'h')
-                        printUsage("");
+                        printUsage("", "");
                     else
-                        printUsage("badFlag");
+                        printUsage("badFlag", string(1, argv[arg][charIndex]));
                 }
             }
             // return index of first non '-' argument
@@ -60,9 +62,9 @@ vector<string> getPaths(int argc, char** argv, int pathIndex)
     for(int i = pathIndex; i < argc; i++)
     {
         if (!filesystem::exists(argv[i]))
-            printUsage("badFile");
+            printUsage("badFile", argv[i]);
         else if(filesystem::is_directory(argv[i]))
-            printUsage("isDir");
+            printUsage("isDir", argv[i]);
         paths.push_back(argv[i]);
     }
     return paths;
@@ -84,7 +86,7 @@ int main(int argc, char** argv)
 {
     const int pathIndex = getFlags(argc, argv);
     if(pathIndex == -1)
-        printUsage("badFile");
+        printUsage("noFile", "");
     vector<string> paths = getPaths(argc, argv, pathIndex);
     printFiles(paths);
     return 0;

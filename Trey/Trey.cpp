@@ -19,12 +19,12 @@ unsigned long tackL = 1;
 // level was the last entry in that level, for formatting
 vector<bool> lastFlags;
 
-void printUsage(bool badFlag, bool badPath)
+void printUsage(bool badFlag, bool badPath, string problem)
 {
     if(badFlag)
-        cerr << "ERROR: Unrecognized flag\n";
+        cerr << "ERROR: Unrecognized flag \"" << problem << "\"\n";
     else if(badPath)
-        cerr << "ERROR: Unrecognized path\n";
+        cerr << "ERROR: Unrecognized path \"" << problem << "\"\n";
     cout << "Usage: trey [-adh] [-l n] [path]\n";
     cout << "   -a : show hidden files\n";
     cout << "   -d : show directories only\n";
@@ -48,7 +48,7 @@ int setFlags(int arg, char** argv)
         charIndex < string(argv[arg]).length(); charIndex++)
     {
         if(argv[arg][charIndex] == 'h')
-            printUsage(false, false);
+            printUsage(false, false, "");
         else if(argv[arg][charIndex] == 'a')
             tackA = true;
         else if(argv[arg][charIndex] == 'd')
@@ -56,12 +56,12 @@ int setFlags(int arg, char** argv)
         else if(argv[arg][charIndex] == 'l')
         {
             if(!isNumeric(argv[arg + 1]))
-                printUsage(true, false);
+                printUsage(true, false, argv[arg + 1]);
             tackL = static_cast<unsigned long>(stoi(argv[++arg]));
             break;
         }
         else
-            printUsage(true, false);
+            printUsage(true, false, string(1, argv[arg][charIndex]));
     }
     return arg;
 }
@@ -153,7 +153,7 @@ int main(int argc, char** argv)
         filesystem::current_path().string() : 
         static_cast<string>(argv[pathIndex]);
     if (!filesystem::exists(path))
-        printUsage(false, true);
+        printUsage(false, true, path);
     lastFlags.resize(static_cast<unsigned long>(tackL));
     cout << path << "\n";
     printDirectoryContents(path, tackL);
