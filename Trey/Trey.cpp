@@ -33,6 +33,15 @@ void printUsage(bool badFlag, bool badPath)
     exit((badFlag || badPath) ? 1 : 0);
 }
 
+bool isNumeric(string input) {
+    for (unsigned long i = 0; i < input.length(); i++)
+    {
+        if (!isdigit(input[i]))
+            return false;
+    }
+    return true;
+}
+
 int setFlags(int arg, char** argv)
 {
     for(string::size_type charIndex = 1; 
@@ -46,6 +55,8 @@ int setFlags(int arg, char** argv)
             tackD = true;
         else if(argv[arg][charIndex] == 'l')
         {
+            if(!isNumeric(argv[arg + 1]))
+                printUsage(true, false);
             tackL = static_cast<unsigned long>(stoi(argv[++arg]));
             break;
         }
