@@ -16,6 +16,7 @@ The collection currently includes:
 A recreation of du. It prints the sizes of the subdirectories in a given path.
 If no path specified, the current directory is used.
 Symlinks are ignored, and the file size is human readable.
+The sort flag (-s) sorts output by decreasing size, otherwise it is case-insensitive alphabetical.
 The help flag (-h) shows usage.
 
 ### Ellis

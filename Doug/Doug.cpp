@@ -11,7 +11,13 @@
 
 using namespace std;
 
+bool tackS = false;
 const array<string, 5> sizeUnits { "B ", "KB", "MB", "GB", "TB" };
+
+struct Entry{
+    filesystem::path path;
+    uint64_t size;
+};
 
 void printUsage(string errorType, string problem)
 {
@@ -19,8 +25,9 @@ void printUsage(string errorType, string problem)
         cerr << "ERROR: Unrecognized flag \"" << problem << "\"\n";
     else if(errorType == "badPath")
         cerr << "ERROR: Unrecognized path \"" << problem << "\"\n";
-    cout << "Usage: doug [-h] [path]\n";
+    cout << "Usage: doug [-hs] [path]\n";
     cout << "   -h : show help\n";
+    cout << "   -s : sort by size\n";
     exit((errorType == "") ? 0 : 1);
 }
 
@@ -41,6 +48,8 @@ int getFlags(int argc, char** argv)
                 {
                     if(argv[arg][charIndex] == 'h')
                         printUsage("", "");
+                    else if(argv[arg][charIndex] == 's')
+                        tackS = true;
                     else
                         printUsage("badFlag", string(1, argv[arg][charIndex]));
                 }
@@ -68,9 +77,58 @@ uint64_t getDirectorySize(const filesystem::path& path)
     return totalSize;
 }
 
-void printDirSize(uint64_t size, const filesystem::path& path)
+void fillEntryVector(vector<Entry>& entries, string path)
 {
-    double roundedFileSize = static_cast<double>(size);
+    for(const auto& file : filesystem::directory_iterator(path))
+    {
+        if(file.is_directory())
+        {
+            Entry temp = {file.path(), 0};
+            entries.push_back(temp);
+        }
+    }
+}
+
+uint64_t getFileSizes(string path)
+{
+    uint64_t totalSize = 0;
+    for(const auto& file : filesystem::directory_iterator(path))
+    {
+        if(file.is_regular_file())
+            totalSize += filesystem::file_size(file);
+    }
+    return totalSize;
+}
+
+uint64_t sumSubdirectorySizes(vector<Entry>& entries)
+{
+    uint64_t totalSize = 0;
+    for(auto& entry : entries)
+    {
+        entry.size = getDirectorySize(entry.path);
+        totalSize += entry.size;
+    }
+    return totalSize;
+}
+
+bool alphabeticSort(const Entry& e1, const Entry& e2) 
+{
+    // case insensitive alphabetic sort
+    string name1 = e1.path.filename().string();
+    string name2 = e2.path.filename().string();
+    transform(name1.begin(), name1.end(), name1.begin(), ::tolower);
+    transform(name2.begin(), name2.end(), name2.begin(), ::tolower);
+    return (name1.compare(name2) < 0);
+}
+
+bool sizeSort(const Entry& e1, const Entry& e2)
+{
+    return (e1.size > e2.size);
+}
+
+void printEntry(const Entry& entry)
+{
+    double roundedFileSize = static_cast<double>(entry.size);
     unsigned long unitIndex = 0;
     for(unsigned long i = 0; i < sizeUnits.size(); i++)
     {
@@ -84,53 +142,7 @@ void printDirSize(uint64_t size, const filesystem::path& path)
     }
     cout << setw(6) << fixed << setprecision(1) << roundedFileSize;
     cout << sizeUnits[unitIndex] << " ";
-    cout << path.string() << "\n";
-}
-
-bool entrySort(const filesystem::directory_entry& p1, 
-    const filesystem::directory_entry& p2) 
-{
-    // sort directories before files
-    if(p1.is_directory() && !p2.is_directory())
-        return true;
-    else if(!p1.is_directory() && p2.is_directory())
-        return false;
-    // sort by name, case-insensitive
-    string name1 = p1.path().filename().string();
-    string name2 = p2.path().filename().string();
-    transform(name1.begin(), name1.end(), name1.begin(), ::tolower);
-    transform(name2.begin(), name2.end(), name2.begin(), ::tolower);
-    return (name1.compare(name2) < 0);
-}
-
-uint64_t getSubdirectorySizes(vector<filesystem::directory_entry>& entries)
-{
-    uint64_t totalSize = 0;
-    for(auto& entry: entries)
-    {
-        uint64_t currentDirSize = getDirectorySize(entry.path());
-        totalSize += currentDirSize;
-        printDirSize(currentDirSize, entry.path());
-    }
-    return totalSize;
-}
-
-void getAllSizes(string path)
-{
-    vector<filesystem::directory_entry> entries;
-    uint64_t pathSize = 0;
-    for(const auto& file : filesystem::directory_iterator(path))
-    {
-        if(file.is_symlink())
-            continue;
-        else if(file.is_directory())
-            entries.push_back(file);
-        else
-            pathSize += filesystem::file_size(file);
-    }
-    sort(entries.begin(), entries.end(), entrySort);
-    pathSize += getSubdirectorySizes(entries);
-    printDirSize(pathSize, filesystem::path(path));
+    cout << entry.path.string() << "\n";
 }
 
 int main(int argc, char** argv)
@@ -141,6 +153,13 @@ int main(int argc, char** argv)
         static_cast<string>(argv[pathIndex]);
     if (!filesystem::exists(path))
         printUsage("badPath", path);
-    getAllSizes(path);
+    vector<Entry> entries;
+    fillEntryVector(entries, path);
+    uint64_t pathSize = getFileSizes(path);
+    pathSize += sumSubdirectorySizes(entries);
+    sort(entries.begin(), entries.end(), (tackS) ? sizeSort : alphabeticSort);
+    for(const auto& entry : entries)
+        printEntry(entry);
+    printEntry(Entry{ path, pathSize });
     return 0;
 }
