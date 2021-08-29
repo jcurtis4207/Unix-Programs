@@ -12,6 +12,12 @@ straight forward and easier to understand.
 
 The collection currently includes:
 
+### Doug
+A recreation of du. It prints the sizes of the subdirectories in a given path.
+If no path specified, the current directory is used.
+Symlinks are ignored, and the file size is human readable.
+The help flag (-h) shows usage.
+
 ### Ellis
 A recreation of ls. By default it prints with the ls flags -hlN.
 The hidden flag (-a) prints hidden files and directories.
